@@ -50,7 +50,38 @@ def get_tasks():
 
     return tasks
 
+def publish_task(task_id):
+    """Публикует подтверждённую задачу."""
+    with sqlite3.connect(DB_PATH) as connection:
+        row = connection.execute(
+            "SELECT content FROM tasks WHERE id = ?",
+            (task_id,),
+        ).fetchone()
 
+        if row is None:
+            raise ValueError("Задача не найдена.")
+
+        task = json.loads(row[0])
+
+        if not task.get("confirmed", False):
+            raise ValueError("Сначала подтвердите карточку.")
+
+        if not task.get("title", "").strip():
+            raise ValueError("Добавьте название задачи.")
+
+        connection.execute(
+            "UPDATE tasks SET status = 'published' WHERE id = ?",
+            (task_id,),
+        )
+
+
+def get_published_tasks():
+    """Возвращает только опубликованные задачи."""
+    return [
+        task
+        for task in get_tasks()
+        if task["status"] == "published"
+    ]
 if __name__ == "__main__":
     init_db()
 

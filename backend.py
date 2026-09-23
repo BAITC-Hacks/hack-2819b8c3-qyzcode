@@ -1,4 +1,4 @@
-from database import init_db, save_task
+from database import init_db, save_task, get_published_tasks
 def create_task():
     """Создаёт пустую карточку задачи."""
     return {
@@ -69,7 +69,20 @@ def calculate_rating(task):
         "breakdown": breakdown,
         "tips": tips,
     }
+def get_catalog():
+    """Возвращает опубликованные задачи, лучшие по рейтингу — первыми."""
+    tasks = get_published_tasks()
 
+    for task in tasks:
+        rating = calculate_rating(task)
+        task["score"] = rating["score"]
+        task["level"] = rating["level"]
+
+    return sorted(
+        tasks,
+        key=lambda task: task["score"],
+        reverse=True,
+    )
 
 # Этот пример запускается только при запуске backend.py.
 if __name__ == "__main__":
