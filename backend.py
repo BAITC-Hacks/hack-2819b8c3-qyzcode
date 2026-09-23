@@ -3,6 +3,7 @@ def create_task():
     """Создаёт пустую карточку задачи."""
     return {
         "title": "",
+        "topic": "",
         "context": "",
         "need": "",
         "users": "",
@@ -69,17 +70,32 @@ def calculate_rating(task):
         "breakdown": breakdown,
         "tips": tips,
     }
-def get_catalog():
-    """Возвращает опубликованные задачи, лучшие по рейтингу — первыми."""
+def get_catalog(topic=None, level=None):
+    """Возвращает каталог с фильтрами и сортировкой по рейтингу."""
     tasks = get_published_tasks()
+    catalog = []
 
     for task in tasks:
         rating = calculate_rating(task)
+
         task["score"] = rating["score"]
         task["level"] = rating["level"]
 
+        # У старых задач темы может не быть.
+        task["topic"] = task.get("topic", "").strip() or "Без темы"
+
+        # Если тема указана в фильтре, оставляем только совпадения.
+        if topic and task["topic"].casefold() != topic.strip().casefold():
+            continue
+
+        # Аналогично проверяем уровень готовности.
+        if level and task["level"].casefold() != level.strip().casefold():
+            continue
+
+        catalog.append(task)
+
     return sorted(
-        tasks,
+        catalog,
         key=lambda task: task["score"],
         reverse=True,
     )
