@@ -11,6 +11,7 @@ from database import (
 )
 from integration import normalize_card, clarify, apply_answers
 from task_ai import InputValidationError
+from seed_demo import seed
 
 st.set_page_config(page_title="AI Sana", page_icon="💡", layout="wide")
 st.markdown("<style>" + Path(__file__).with_name("styles.css").read_text(encoding="utf-8") + "</style>", unsafe_allow_html=True)
@@ -91,6 +92,15 @@ role = st.sidebar.radio("Режим демонстрации", ["Бизнес", 
 page = st.sidebar.radio("Раздел", ["Создать задачу", "Каталог задач", "Кабинет бизнеса"], key="page")
 st.sidebar.caption("Демонстрация без регистрации. Переключение роли не является защитой доступа.")
 st.sidebar.button("Новая задача", on_click=load_editor, disabled=role != "Бизнес")
+with st.sidebar.expander("Данные для защиты"):
+    st.caption("Добавить 5 синтетических задач, команд и откликов. Ваши задачи сохранятся. Повторное нажатие не создаёт дубликаты.")
+    if st.button("Загрузить демопримеры"):
+        try:
+            added = seed()
+        except sqlite3.Error:
+            st.error("Не удалось загрузить демопримеры. Повторите попытку.")
+        else:
+            feedback(f"Добавлено демозадач: {added}. Они доступны в каталоге.")
 st.markdown('<div class="sana-header"><div><h1>От задачи — к решению</h1><p>Бизнес делится вызовами. Команды предлагают идеи.</p></div><span class="sana-chip">AI SANA · ПРАКТИЧЕСКИЙ ХАКАТОН</span></div>', unsafe_allow_html=True)
 if "flash" in st.session_state:
     st.success(st.session_state.pop("flash"))
@@ -236,6 +246,8 @@ def render_editor():
     with st.form(f"editor_{revision}"):
         description = st.text_area("Исходное описание проблемы", value=draft.get("description", ""),
             placeholder="Например: в магазине много списаний, хотим их сократить.", max_chars=12000)
+        st.caption("Можно начать только с описания: нажмите «Уточнить с ИИ», а карточку заполните после ответов.")
+        ask = st.form_submit_button("Уточнить с ИИ")
         topics = list(dict.fromkeys(TOPICS + [draft["topic"]]))
         topic = st.selectbox("Тема задачи", topics, index=topics.index(draft["topic"]))
         values = {}
@@ -248,12 +260,10 @@ def render_editor():
                 values[field] = widget(label, value=draft.get(field, ""), max_chars=4000)
         offline = st.checkbox("Использовать резервные вопросы без API", value=not bool(os.getenv("OPENAI_API_KEY")))
         confirmed = st.checkbox("Подтверждаю достоверность заполненных сведений", value=False)
-        action_columns = st.columns([1, 1, 1.5])
+        action_columns = st.columns([1, 1.5])
         with action_columns[0]:
-            ask = st.form_submit_button("Уточнить с ИИ")
-        with action_columns[1]:
             save_draft = st.form_submit_button("Сохранить черновик")
-        with action_columns[2]:
+        with action_columns[1]:
             confirm = st.form_submit_button("Подтвердить и сохранить карточку", type="primary")
 
     if ask or save_draft or confirm:
