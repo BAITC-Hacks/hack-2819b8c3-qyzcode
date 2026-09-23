@@ -189,6 +189,100 @@ def set_proposal_status(proposal_id, status):
             "UPDATE proposals SET status = ? WHERE id = ?",
             (status, proposal_id),
         )
+
+def get_task(task_id):
+    """Возвращает одну задачу по номеру."""
+    with sqlite3.connect(DB_PATH) as connection:
+        connection.row_factory = sqlite3.Row
+
+        row = connection.execute(
+            "SELECT id, content, status FROM tasks WHERE id = ?",
+            (task_id,),
+        ).fetchone()
+
+    if row is None:
+        raise ValueError("Задача не найдена.")
+
+    task = json.loads(row["content"])
+    task["id"] = row["id"]
+    task["status"] = row["status"]
+    return task
+
+
+def update_task(task_id, changes):
+    """Изменяет поля карточки и сбрасывает подтверждение."""
+    allowed_fields = {
+        "title",
+        "topic",
+        "context",
+        "need",
+        "users",
+        "data",
+        "constraints",
+        "result",
+        "success_criteria",
+        "contact",
+        "interaction",
+    }
+
+    if not changes:
+        raise ValueError("Нет изменений для сохранения.")
+
+    for field, value in changes.items():
+        if field not in allowed_fields:
+            raise ValueError(f"Нельзя изменить поле: {field}")
+
+        if not isinstance(value, str):
+            raise ValueError(f"Поле {field} должно содержать текст.")
+
+    with sqlite3.connect(DB_PATH) as connection:
+        row = connection.execute(
+            "SELECT content FROM tasks WHERE id = ?",
+            (task_id,),
+        ).fetchone()
+
+        if row is None:
+            raise ValueError("Задача не найдена.")
+
+        task = json.loads(row[0])
+
+        for field, value in changes.items():
+            task[field] = value.strip()
+
+        task["confirmed"] = False
+
+        connection.execute(
+            """
+            UPDATE tasks
+            SET content = ?, status = 'draft'
+            WHERE id = ?
+            """,
+            (json.dumps(task, ensure_ascii=False), task_id),
+        )
+
+
+def confirm_task(task_id):
+    """Подтверждает текущую сохранённую версию карточки."""
+    with sqlite3.connect(DB_PATH) as connection:
+        row = connection.execute(
+            "SELECT content FROM tasks WHERE id = ?",
+            (task_id,),
+        ).fetchone()
+
+        if row is None:
+            raise ValueError("Задача не найдена.")
+
+        task = json.loads(row[0])
+
+        if not task.get("title", "").strip():
+            raise ValueError("Добавьте название задачи.")
+
+        task["confirmed"] = True
+
+        connection.execute(
+            "UPDATE tasks SET content = ? WHERE id = ?",
+            (json.dumps(task, ensure_ascii=False), task_id),
+        )
 if __name__ == "__main__":
     init_db()
 
