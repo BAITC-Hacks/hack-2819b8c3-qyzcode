@@ -1,0 +1,11 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.env
+.streamlit/secrets.toml
+ai_sana.db
+ai_sana.db-journal
+ai_sana.db-wal
+ai_sana.db-shm
+.pytest_cache/

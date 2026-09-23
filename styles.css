@@ -1,0 +1,41 @@
+:root { --navy: #102344; --blue: #2563eb; --muted: #63728b; }
+.stApp { background: #f3f6fc; color: #142748; }
+[data-testid="stMainBlockContainer"] { max-width: 1280px; padding-top: 2.5rem; padding-bottom: 4rem; }
+[data-testid="stHeader"] { background: #f3f6fc; }
+[data-testid="stSidebar"] { background: #102344; border-right: 1px solid #263a5a; }
+[data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3, [data-testid="stSidebar"] p,
+[data-testid="stSidebar"] label, [data-testid="stSidebar"] small { color: #f0f5ff !important; }
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p { color: #b6c6e1 !important; }
+[data-testid="stSidebar"] [role="radiogroup"] { gap: .5rem; }
+[data-testid="stSidebar"] [role="radiogroup"] label {
+ padding: .65rem .8rem; border-radius: 10px; background: #1a3155; width: 100%;
+}
+[data-testid="stSidebar"] button { background: #244779; border: 1px solid #537bb4; color: white; }
+h1,h2,h3 { letter-spacing: -.025em; color: #142748; }
+h1 { font-size: 2.4rem !important; }
+[data-testid="stForm"] { background: white; border: 1px solid #dae3f2; border-radius: 18px; padding: 1.5rem; box-shadow: 0 5px 25px #17346505; }
+[data-testid="stTextInput"] input, [data-testid="stTextArea"] textarea { font-size: 1rem; }
+[data-testid="stTextInput"] > div, [data-testid="stTextArea"] > div { border-radius: 9px; }
+[data-testid="stMetric"] { background: white; border: 1px solid #dbe4f1; border-radius: 14px; padding: 1.1rem 1.25rem; }
+[data-testid="stMetricValue"] { color: #18396c; }
+[data-testid="stExpander"] { background: white; border-radius: 14px; border: 1px solid #dbe4f1; overflow: hidden; }
+[data-testid="stExpander"] summary { padding: 1rem; font-weight: 600; }
+.stButton button, .stFormSubmitButton button, .stLinkButton a { border-radius: 9px; font-weight: 600; min-height: 44px; }
+.stButton button[kind="primary"], .stFormSubmitButton button[kind="primary"] { background: #2563eb; border-color: #2563eb; color: white; }
+[data-testid="stAlert"] { border-radius: 12px; }
+.sana-brand { padding: 12px 0 26px; color: white; font-size: 1.8rem; font-weight: 800; letter-spacing: -.06em; }
+.sana-brand span { color: #77b6ff; }
+.sana-brand small { display: block; font-size: .75rem; color: #adc3e5; letter-spacing: .16em; margin-top: 8px; font-weight: 500; }
+.sana-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 1.5rem; padding-bottom: 1.4rem; border-bottom: 1px solid #dbe4f1; }
+.sana-header h1 { margin: 0; padding: 0; font-size: 2rem !important; }
+.sana-header p { margin: 8px 0 0; color: #63728b; font-size: 1rem; }
+.sana-chip { font-size: .8rem; padding: 8px 14px; color: #2459a8; border: 1px solid #bfd3f6; border-radius: 30px; white-space: nowrap; background: #e8f0ff; }
+.sana-steps { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0 22px; }
+.sana-steps span { padding: 9px 14px; border-radius: 9px; background: #e8eef8; color: #496284; font-size: .9rem; }
+.sana-steps span:first-child { background: #18396c; color: white; }
+@media (max-width: 700px) {
+ [data-testid="stMainBlockContainer"] { padding: 1.5rem 1rem; }
+ .sana-header { align-items: flex-start; flex-direction: column; }
+ [data-testid="stForm"] { padding: 1rem; }
+}
