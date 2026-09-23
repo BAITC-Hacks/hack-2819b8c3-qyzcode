@@ -1,3 +1,4 @@
+from database import init_db, save_task
 def create_task():
     """Создаёт пустую карточку задачи."""
     return {
@@ -95,3 +96,6 @@ if __name__ == "__main__":
     print("\nКак повысить рейтинг:")
     for tip in rating["tips"]:
         print("-", tip)
+    init_db()
+    task_id = save_task(task)
+    print("\nЗадача сохранена! Её номер:", task_id)
