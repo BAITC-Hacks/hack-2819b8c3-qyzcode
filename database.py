@@ -171,6 +171,24 @@ def get_proposals(task_id):
         ).fetchall()
 
     return [dict(row) for row in rows]
+def set_proposal_status(proposal_id, status):
+    """Сохраняет решение бизнеса по отклику."""
+    if status not in ("accepted", "rejected"):
+        raise ValueError("Допустимые статусы: accepted или rejected.")
+
+    with sqlite3.connect(DB_PATH) as connection:
+        proposal = connection.execute(
+            "SELECT id FROM proposals WHERE id = ?",
+            (proposal_id,),
+        ).fetchone()
+
+        if proposal is None:
+            raise ValueError("Отклик не найден.")
+
+        connection.execute(
+            "UPDATE proposals SET status = ? WHERE id = ?",
+            (status, proposal_id),
+        )
 if __name__ == "__main__":
     init_db()
 
