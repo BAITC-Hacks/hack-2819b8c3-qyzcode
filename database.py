@@ -283,6 +283,123 @@ def confirm_task(task_id):
             "UPDATE tasks SET content = ? WHERE id = ?",
             (json.dumps(task, ensure_ascii=False), task_id),
         )
+
+def init_teams():
+    """Создаёт профили команд и таблицу подтверждённых этапов."""
+    profiles = [
+        ("QyzCode", "Торговля", "Python, анализ данных", "Streamlit, SQLite"),
+        ("DataTeam", "Аналитика", "Python, SQL", "Pandas"),
+        ("EduAI", "Образование", "Python, интерфейсы", "Streamlit"),
+        ("WebTeam", "Веб-сервисы", "JavaScript, дизайн", "React"),
+        ("LogicAI", "Логистика", "Python, оптимизация", "FastAPI"),
+    ]
+
+    with sqlite3.connect(DB_PATH) as connection:
+        connection.execute("""
+            CREATE TABLE IF NOT EXISTS teams (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                interests TEXT NOT NULL,
+                skills TEXT NOT NULL,
+                technologies TEXT NOT NULL
+            )
+        """)
+
+        connection.execute("""
+            CREATE TABLE IF NOT EXISTS completed_stages (
+                proposal_id INTEGER PRIMARY KEY,
+                team_id INTEGER NOT NULL,
+                description TEXT NOT NULL,
+                points INTEGER NOT NULL,
+                FOREIGN KEY (proposal_id) REFERENCES proposals(id),
+                FOREIGN KEY (team_id) REFERENCES teams(id)
+            )
+        """)
+
+        connection.executemany(
+            """
+            INSERT OR IGNORE INTO teams (
+                name, interests, skills, technologies
+            )
+            VALUES (?, ?, ?, ?)
+            """,
+            profiles,
+        )
+
+
+def get_teams():
+    """Возвращает профили и заработанные командами баллы."""
+    with sqlite3.connect(DB_PATH) as connection:
+        connection.row_factory = sqlite3.Row
+
+        rows = connection.execute("""
+            SELECT
+                teams.*,
+                COALESCE(
+                    (
+                        SELECT SUM(points)
+                        FROM completed_stages
+                        WHERE team_id = teams.id
+                    ),
+                    0
+                ) AS points
+            FROM teams
+            ORDER BY points DESC, name
+        """).fetchall()
+
+    return [dict(row) for row in rows]
+
+
+def confirm_stage(proposal_id, description):
+    """Подтверждает один выполненный этап выбранной команды."""
+    if not isinstance(description, str) or not description.strip():
+        raise ValueError("Опишите фактически выполненную работу.")
+
+    with sqlite3.connect(DB_PATH) as connection:
+        connection.execute("PRAGMA foreign_keys = ON")
+
+        proposal = connection.execute(
+            "SELECT team_name, status FROM proposals WHERE id = ?",
+            (proposal_id,),
+        ).fetchone()
+
+        if proposal is None:
+            raise ValueError("Отклик не найден.")
+
+        team_name, status = proposal
+
+        if status != "accepted":
+            raise ValueError("Бизнес должен сначала выбрать эту команду.")
+
+        team = connection.execute(
+            "SELECT id FROM teams WHERE name = ?",
+            (team_name,),
+        ).fetchone()
+
+        if team is None:
+            raise ValueError(
+                "У команды нет профиля. Используйте название из списка команд."
+            )
+
+        completed = connection.execute(
+            "SELECT proposal_id FROM completed_stages WHERE proposal_id = ?",
+            (proposal_id,),
+        ).fetchone()
+
+        if completed is not None:
+            raise ValueError("За этот этап баллы уже начислены.")
+
+        connection.execute(
+            """
+            INSERT INTO completed_stages (
+                proposal_id, team_id, description, points
+            )
+            VALUES (?, ?, ?, ?)
+            """,
+            (proposal_id, team[0], description.strip(), 10),
+        )
+
+    return 10
 if __name__ == "__main__":
     init_db()
 
