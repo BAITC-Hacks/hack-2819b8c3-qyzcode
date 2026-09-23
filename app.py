@@ -18,7 +18,7 @@ except Exception as error:
     st.stop()
 
 
-# Запоминаем данные между нажатиями кнопок.
+# Данные текущей сессии.
 if "confirmed_task" not in st.session_state:
     st.session_state.confirmed_task = None
 
@@ -28,75 +28,149 @@ if "last_saved_task" not in st.session_state:
 if "last_saved_id" not in st.session_state:
     st.session_state.last_saved_id = None
 
+# Сохраняем введённые поля при переключении разделов.
+if "draft" not in st.session_state:
+    st.session_state.draft = {
+        "title": "",
+        "industry": "Торговля",
+        "context": "",
+        "need": "",
+        "users": "",
+        "data": "",
+        "constraints": "",
+        "result": "",
+        "success_criteria": "",
+        "contact": "",
+        "interaction": "",
+    }
 
-st.title("💡 AI Sana")
+
+# Меню слева.
+st.sidebar.title("💡 AI Sana")
+
+page = st.sidebar.radio(
+    "Раздел",
+    [
+        "Создать задачу",
+        "Каталог задач",
+        "Кабинет бизнеса",
+    ],
+)
+
+st.sidebar.caption(
+    "Перед переходом в другой раздел "
+    "нажмите «Подтвердить карточку», чтобы сохранить введённые поля."
+)
+
+
+st.title("AI Sana")
 st.write("Задачи бизнеса — решения студенческих команд.")
 
+
+# Каталог пока не подключён.
+if page == "Каталог задач":
+    st.subheader("Каталог задач")
+    st.info(
+        "Здесь появятся опубликованные задачи, "
+        "сортировка по рейтингу и фильтры."
+    )
+    st.caption(
+        "Сохранённые черновики пока не публикуются в каталоге."
+    )
+    st.stop()
+
+
+# Кабинет пока не подключён.
+if page == "Кабинет бизнеса":
+    st.subheader("Кабинет бизнеса")
+    st.info(
+        "Здесь появятся отклики студентов "
+        "и кнопки «Выбрать» и «Отклонить»."
+    )
+    st.stop()
+
+
+# Форма создания задачи.
 st.subheader("Карточка бизнес-задачи")
 st.caption(
     "Заполните известные сведения. "
     "Остальные можно дополнить позже."
 )
 
+draft = st.session_state.draft
+
+industries = [
+    "Торговля",
+    "Образование",
+    "Медицина",
+    "Логистика",
+    "Другое",
+]
+
 with st.form("task_form"):
     title = st.text_input(
         "Название задачи",
+        value=draft["title"],
         placeholder="Например: уменьшить списание продуктов",
     )
 
     industry = st.selectbox(
         "Тема задачи",
-        [
-            "Торговля",
-            "Образование",
-            "Медицина",
-            "Логистика",
-            "Другое",
-        ],
+        industries,
+        index=industries.index(draft["industry"]),
     )
 
     context = st.text_area(
         "Контекст — что происходит сейчас?",
+        value=draft["context"],
         placeholder="Как сейчас устроен процесс?",
     )
 
     need = st.text_area(
         "Потребность — что нужно изменить?",
+        value=draft["need"],
         placeholder="Какую проблему вы хотите решить?",
     )
 
     users = st.text_area(
         "Пользователи",
+        value=draft["users"],
         placeholder="Кто будет пользоваться решением?",
     )
 
     data = st.text_area(
         "Данные и материалы",
+        value=draft["data"],
         placeholder="Какие таблицы, документы или примеры доступны?",
     )
 
     constraints = st.text_area(
         "Ограничения",
+        value=draft["constraints"],
         placeholder="Сроки, технологии, доступы и другие условия",
     )
 
     result = st.text_area(
         "Ожидаемый результат",
+        value=draft["result"],
         placeholder="Что команда должна передать в конце работы?",
     )
 
     success_criteria = st.text_area(
         "Критерии успеха",
+        value=draft["success_criteria"],
         placeholder="По каким измеримым признакам вы примете результат?",
     )
 
     contact = st.text_input(
         "Контакт представителя бизнеса",
+        value=draft["contact"],
         placeholder="Email или другой способ связи",
     )
 
     interaction = st.text_area(
         "Формат взаимодействия",
+        value=draft["interaction"],
         placeholder="Как часто вы готовы отвечать на вопросы команды?",
     )
 
@@ -107,27 +181,33 @@ with st.form("task_form"):
     submitted = st.form_submit_button("Подтвердить карточку")
 
 
+# Обрабатываем подтверждение формы.
 if submitted:
-    if not title.strip() or not need.strip():
+    form_data = {
+        "title": title.strip(),
+        "industry": industry,
+        "context": context.strip(),
+        "need": need.strip(),
+        "users": users.strip(),
+        "data": data.strip(),
+        "constraints": constraints.strip(),
+        "result": result.strip(),
+        "success_criteria": success_criteria.strip(),
+        "contact": contact.strip(),
+        "interaction": interaction.strip(),
+    }
+
+    st.session_state.draft = form_data.copy()
+
+    if not form_data["title"] or not form_data["need"]:
         st.warning("Заполните название задачи и потребность.")
     elif not confirmed:
         st.warning("Поставьте галочку подтверждения сведений.")
     else:
         st.session_state.confirmed_task = {
-            "title": title.strip(),
-            "industry": industry,
-            "context": context.strip(),
-            "need": need.strip(),
-            "users": users.strip(),
-            "data": data.strip(),
-            "constraints": constraints.strip(),
-            "result": result.strip(),
-            "success_criteria": success_criteria.strip(),
-            "contact": contact.strip(),
-            "interaction": interaction.strip(),
+            **form_data,
             "confirmed": True,
         }
-
         st.success("Карточка подтверждена!")
 
 
@@ -160,7 +240,7 @@ if task is not None:
         st.markdown(f"**{label}**")
         st.write(task.get(field) or "Пока не указано")
 
-    # Получаем рейтинг из бэкенда.
+    # Рейтинг рассчитывается в backend.py.
     rating = calculate_rating(task)
 
     st.divider()
@@ -192,14 +272,15 @@ if task is not None:
     else:
         st.success("Все разделы заполнены и подтверждены!")
 
-    # Сохраняем подтверждённую карточку в SQLite.
+    # Сохранение в SQLite.
     st.divider()
     st.subheader("Сохранение")
 
     st.caption(
-        "Карточка сохраняется как черновик и пока не публикуется. "
-        "В этой версии приложения изменённая карточка "
-        "сохраняется отдельной записью."
+        "Карточка сохраняется как черновик. "
+        "В этой версии изменённая карточка создаёт новую запись. "
+        "Повторное сохранение той же версии блокируется "
+        "только в текущей сессии."
     )
 
     already_saved = st.session_state.last_saved_task == task
@@ -209,14 +290,12 @@ if task is not None:
             f"Эта версия сохранена: задача "
             f"№{st.session_state.last_saved_id}."
         )
-    else:
-        if st.button("Сохранить карточку в базу"):
-            try:
-                task_id = save_task(task)
-
-                st.session_state.last_saved_task = task.copy()
-                st.session_state.last_saved_id = task_id
-
-                st.rerun()
-            except Exception as error:
-                st.error(f"Не удалось сохранить карточку: {error}")
+    elif st.button("Сохранить карточку в базу"):
+        try:
+            task_id = save_task(task)
+        except Exception as error:
+            st.error(f"Не удалось сохранить карточку: {error}")
+        else:
+            st.session_state.last_saved_task = task.copy()
+            st.session_state.last_saved_id = task_id
+            st.rerun()
