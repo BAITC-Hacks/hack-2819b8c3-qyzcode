@@ -1,4 +1,5 @@
 import json
+from contextlib import contextmanager
 import sqlite3
 from urllib.parse import urlparse
 from pathlib import Path
@@ -9,9 +10,20 @@ from pathlib import Path
 DB_PATH = Path(__file__).with_name("ai_sana.db")
 
 
+@contextmanager
+def connect():
+    connection = sqlite3.connect(DB_PATH, timeout=15)
+    try:
+        connection.execute("PRAGMA foreign_keys = ON")
+        with connection:
+            yield connection
+    finally:
+        connection.close()
+
+
 def init_db():
     """Создаёт таблицу задач, если её ещё нет."""
-    with sqlite3.connect(DB_PATH) as connection:
+    with connect() as connection:
         connection.execute("""
             CREATE TABLE IF NOT EXISTS tasks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,7 +57,7 @@ def save_task(task):
     task.pop("status", None)
     content = json.dumps(task, ensure_ascii=False)
 
-    with sqlite3.connect(DB_PATH) as connection:
+    with connect() as connection:
         cursor = connection.execute(
             "INSERT INTO tasks (content) VALUES (?)",
             (content,),
@@ -55,7 +67,7 @@ def save_task(task):
 
 def get_tasks():
     """Возвращает все сохранённые карточки."""
-    with sqlite3.connect(DB_PATH) as connection:
+    with connect() as connection:
         connection.row_factory = sqlite3.Row
         rows = connection.execute(
             "SELECT id, content, status FROM tasks ORDER BY id DESC"
@@ -73,7 +85,7 @@ def get_tasks():
 
 def publish_task(task_id):
     """Публикует подтверждённую задачу."""
-    with sqlite3.connect(DB_PATH) as connection:
+    with connect() as connection:
         row = connection.execute(
             "SELECT content FROM tasks WHERE id = ?",
             (task_id,),
@@ -109,7 +121,7 @@ def get_published_tasks():
 
 
 def get_task(task_id):
-    with sqlite3.connect(DB_PATH) as connection:
+    with connect() as connection:
         row = connection.execute(
             "SELECT content, status FROM tasks WHERE id = ?", (task_id,)
         ).fetchone()
@@ -127,7 +139,7 @@ def update_task(task_id, task):
         task.get("title", "").strip() and task.get("need", "").strip()
     ):
         raise ValueError("Заполните название и потребность.")
-    with sqlite3.connect(DB_PATH) as connection:
+    with connect() as connection:
         row = connection.execute(
             "SELECT status FROM tasks WHERE id = ?", (task_id,)
         ).fetchone()
@@ -143,7 +155,7 @@ def update_task(task_id, task):
 def save_team(name, interests="", skills="", technologies=""):
     if not name.strip():
         raise ValueError("Введите название команды.")
-    with sqlite3.connect(DB_PATH) as connection:
+    with connect() as connection:
         connection.execute(
             "INSERT OR IGNORE INTO teams (name, interests, skills, technologies) VALUES (?, ?, ?, ?)",
             (name.strip(), interests.strip(), skills.strip(), technologies.strip()),
@@ -154,7 +166,7 @@ def save_team(name, interests="", skills="", technologies=""):
 
 
 def get_teams():
-    with sqlite3.connect(DB_PATH) as connection:
+    with connect() as connection:
         connection.row_factory = sqlite3.Row
         return [dict(row) for row in connection.execute(
             "SELECT teams.*, COALESCE((SELECT SUM(progress_points) FROM proposals "
@@ -169,7 +181,7 @@ def submit_proposal(task_id, team_id, idea, plan, deadline, link):
     url = urlparse(values[3])
     if url.scheme not in ("http", "https") or not url.netloc:
         raise ValueError("Укажите ссылку, начинающуюся с https:// или http://.")
-    with sqlite3.connect(DB_PATH) as connection:
+    with connect() as connection:
         task = connection.execute("SELECT status FROM tasks WHERE id = ?", (task_id,)).fetchone()
         if task is None or task[0] != "published":
             raise ValueError("Отклик доступен только на опубликованную задачу.")
@@ -183,7 +195,7 @@ def submit_proposal(task_id, team_id, idea, plan, deadline, link):
 
 
 def get_proposals(task_id):
-    with sqlite3.connect(DB_PATH) as connection:
+    with connect() as connection:
         connection.row_factory = sqlite3.Row
         return [dict(row) for row in connection.execute(
             "SELECT proposals.*, teams.name AS team_name FROM proposals "
@@ -195,7 +207,7 @@ def get_proposals(task_id):
 def decide_proposal(proposal_id, decision):
     if decision not in ("selected", "rejected"):
         raise ValueError("Недопустимое решение.")
-    with sqlite3.connect(DB_PATH) as connection:
+    with connect() as connection:
         cursor = connection.execute(
             "UPDATE proposals SET status = ? WHERE id = ?", (decision, proposal_id)
         )
@@ -207,7 +219,7 @@ def confirm_milestone(proposal_id, evidence):
     """Award once, only to a selected proposal after explicit business confirmation."""
     if not evidence.strip():
         raise ValueError("Опишите проверенный результат этапа.")
-    with sqlite3.connect(DB_PATH) as connection:
+    with connect() as connection:
         cursor = connection.execute(
             "UPDATE proposals SET milestone = ?, progress_points = 10 "
             "WHERE id = ? AND status = 'selected' AND progress_points = 0",
