@@ -22,12 +22,12 @@ python -m unittest discover -s tests -v
 ## Вызов из бэкенда
 
 ```python
-from task_ai import analyze_task, InputValidationError
+from task_ai import FIELDS, analyze_task, InputValidationError
 
 try:
     response = analyze_task(
         description="Хотим сократить ожидание заказа в кафе",
-        fields=task,  # dict из create_task(), включая confirmed, если он есть
+        fields={name: task.get(name, "") for name in FIELDS},  # без topic/id/status
     )
 except InputValidationError as error:
     # Вернуть HTTP 400/422 с понятной ошибкой входа.
@@ -198,4 +198,13 @@ analysis = analyze_task(description, fields_for_ai)
 Ключ задаётся в окружении процесса Streamlit на сервере. Импорт task_ai сам
 не загружает .env. На вашем хостинге используйте настройки секретов либо уже
 принятый в бэкенде механизм загрузки переменных окружения.
-```.env``` и ключ не нужно передавать через GitHub.
+`.env` и ключ не нужно передавать через GitHub.
+
+## Актуализация после новых коммитов команды
+
+В backend de497ca карточка уже содержит topic; выбирайте только FIELDS при
+вызове AI. Пример выше обновлён. В frontend 0c9cbd5 появился integration.py,
+который нормализует названия и фильтрует служебные поля; его clarify() можно
+использовать при подключении кнопки к app.py. В просмотренном app.py вызов
+AI ещё отсутствует. Ранние разделы проверки отражают состояние на момент их
+написания; актуальный статус общего приложения приведён в корневом README.
