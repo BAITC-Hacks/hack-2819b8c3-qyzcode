@@ -1,0 +1,49 @@
+{
+  "schema_version": "1.0",
+  "mode": "fallback",
+  "fallback_reason": "offline_requested",
+  "requires_confirmation": true,
+  "card": {
+    "title": "Сокращение ожидания в кафе",
+    "context": "Посетители долго ждут заказ.",
+    "need": "Сократить время ожидания.",
+    "users": "Посетители кафе",
+    "data": "",
+    "constraints": "",
+    "result": "",
+    "success_criteria": "",
+    "contact": "",
+    "interaction": "",
+    "confirmed": false
+  },
+  "missing_fields": [
+    "data",
+    "constraints",
+    "result",
+    "success_criteria",
+    "contact",
+    "interaction"
+  ],
+  "questions": [
+    {
+      "field": "data",
+      "question": "Есть ли примеры заказов или данные о времени обслуживания, доступные команде?"
+    },
+    {
+      "field": "result",
+      "question": "Какой конкретный результат должна передать команда: анализ, прототип или инструмент?"
+    },
+    {
+      "field": "success_criteria",
+      "question": "По какому измеримому показателю, целевому значению и способу проверки вы примете результат?"
+    },
+    {
+      "field": "constraints",
+      "question": "Какие сроки, технологии и ограничения доступа нужно учесть?"
+    },
+    {
+      "field": "contact",
+      "question": "Какой рабочий контакт представителя бизнеса можно указать для связи?"
+    }
+  ]
+}

@@ -3,6 +3,7 @@ import json
 import math
 import os
 import socket
+from http.client import HTTPException
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -110,7 +111,7 @@ def analyze_task(description, fields=None, *, offline=False):
                 reason = exc.reason
             except (ValueError, UnicodeError):
                 reason = "invalid_response"
-            except OSError:
+            except (OSError, HTTPException):
                 reason = "network_error"
     if analysis is None:
         analysis = validate_analysis(local_analysis(description, card))
