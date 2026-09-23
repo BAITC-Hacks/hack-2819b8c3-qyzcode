@@ -1,8 +1,9 @@
+from database import init_db, save_task, get_published_tasks
 def create_task():
     """Создаёт пустую карточку задачи."""
     return {
         "title": "",
-        "industry": "",
+        "topic": "",
         "context": "",
         "need": "",
         "users": "",
@@ -17,7 +18,7 @@ def create_task():
 
 
 def calculate_rating(task):
-    """Возвращает рейтинг, его расшифровку и подсказки."""
+    """Считает баллы и возвращает подсказки."""
     rules = [
         ("Контекст и потребность", ["context", "need"], 20),
         ("Данные и материалы", ["data"], 20),
@@ -33,20 +34,15 @@ def calculate_rating(task):
     breakdown = []
 
     for name, fields, points in rules:
+        # Для баллов должны быть заполнены все поля этой группы.
         filled = all(
             isinstance(task.get(field), str)
-            and bool(task[field].strip())
+            and task[field].strip()
             for field in fields
         )
 
-        earned = (
-            points
-            if filled and task.get("confirmed", False)
-            else 0
-        )
-
+        earned = points if filled and task.get("confirmed", False) else 0
         score += earned
-
         breakdown.append({
             "name": name,
             "earned": earned,
@@ -54,15 +50,10 @@ def calculate_rating(task):
         })
 
         if not filled:
-            tips.append(
-                f"Дополните раздел «{name}» "
-                f"и подтвердите карточку: +{points} баллов."
-            )
+            tips.append(f"Дополните раздел «{name}»: +{points} баллов.")
 
     if not task.get("confirmed", False):
-        tips.append(
-            "Подтвердите карточку, чтобы получить баллы."
-        )
+        tips.append("Подтвердите карточку, чтобы получить баллы.")
 
     if score < 40:
         level = "Черновик"
@@ -79,3 +70,62 @@ def calculate_rating(task):
         "breakdown": breakdown,
         "tips": tips,
     }
+def get_catalog(topic=None, level=None):
+    """Возвращает каталог с фильтрами и сортировкой по рейтингу."""
+    tasks = get_published_tasks()
+    catalog = []
+
+    for task in tasks:
+        rating = calculate_rating(task)
+
+        task["score"] = rating["score"]
+        task["level"] = rating["level"]
+
+        # У старых задач темы может не быть.
+        task["topic"] = (task.get("topic") or task.get("industry") or "").strip() or "Без темы"
+
+        # Если тема указана в фильтре, оставляем только совпадения.
+        if topic and task["topic"].casefold() != topic.strip().casefold():
+            continue
+
+        # Аналогично проверяем уровень готовности.
+        if level and task["level"].casefold() != level.strip().casefold():
+            continue
+
+        catalog.append(task)
+
+    return sorted(
+        catalog,
+        key=lambda task: task["score"],
+        reverse=True,
+    )
+
+# Этот пример запускается только при запуске backend.py.
+if __name__ == "__main__":
+    task = create_task()
+
+    task["title"] = "Помощник для магазина"
+    task["context"] = "Сотрудники отвечают на повторяющиеся вопросы."
+    task["need"] = "Сократить время на ответы покупателям."
+    task["users"] = "Покупатели магазина"
+
+    # В приложении это значение задаст кнопка подтверждения.
+    task["confirmed"] = True
+
+    rating = calculate_rating(task)
+
+    print("Задача:", task["title"])
+    print("Рейтинг:", rating["score"], "/ 100")
+    print("Уровень:", rating["level"])
+
+    print("\nРасшифровка:")
+    for item in rating["breakdown"]:
+        print(f"- {item['name']}: {item['earned']}/{item['maximum']}")
+
+    print("\nКак повысить рейтинг:")
+    for tip in rating["tips"]:
+        print("-", tip)
+    init_db()
+    task_id = save_task(task)
+    print("\nЗадача сохранена! Её номер:", task_id)
+
